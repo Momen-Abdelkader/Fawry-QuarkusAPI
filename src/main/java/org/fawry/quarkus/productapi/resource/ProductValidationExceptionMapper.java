@@ -9,7 +9,7 @@ import jakarta.ws.rs.ext.Provider;
 import java.util.List;
 
 @Provider
-public class ValidationExceptionMapper implements ExceptionMapper<ConstraintViolationException> {
+public class ProductValidationExceptionMapper implements ExceptionMapper<ConstraintViolationException> {
     @Override
     public Response toResponse(ConstraintViolationException exception) {
         List<String> errors = exception

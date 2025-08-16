@@ -34,8 +34,7 @@ public class ProductResource {
         return Uni.createFrom()
                 .converter(UniRx3Converters.fromMaybe(), productRepository.getProduct(id))
                 .map(product -> Response.ok(product).build())
-                .onItem().ifNull()
-                .continueWith(Response.status(Response.Status.NOT_FOUND).build());
+                .onItem().ifNull().continueWith(Response.status(Response.Status.NOT_FOUND).build());
     }
 
     @POST
@@ -47,7 +46,27 @@ public class ProductResource {
                                 .entity(createdProduct)
                                 .build()
                 )
-                .onFailure()
-                .recoverWithItem(Response.status(Response.Status.INTERNAL_SERVER_ERROR).build());
+                .onFailure().recoverWithItem(Response.status(Response.Status.INTERNAL_SERVER_ERROR).build());
     }
+
+    @PUT
+    @Path("/{id}")
+    public Uni<Response> updateProduct(@PathParam("id") int id, @Valid Product product) {
+        return Uni.createFrom()
+                .converter(UniRx3Converters.fromMaybe(), productRepository.getProduct(id))
+                .onItem().ifNotNull().transformToUni(existingProduct -> updateExistingProduct(id, product))
+                .onItem().ifNull().continueWith(Response.status(Response.Status.NOT_FOUND).build())
+                .onFailure().recoverWithItem(Response.status(Response.Status.INTERNAL_SERVER_ERROR).build());
+    }
+
+
+
+    private Uni<Response> updateExistingProduct(int id, Product existingProduct) {
+        existingProduct.setId(id);
+        return Uni.createFrom()
+                .converter(UniRx3Converters.fromSingle(), productRepository.updateProduct(existingProduct))
+                .map(updatedProduct -> Response.ok(updatedProduct).build());
+    }
+
+
 }
