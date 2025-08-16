@@ -59,13 +59,27 @@ public class ProductResource {
                 .onFailure().recoverWithItem(Response.status(Response.Status.INTERNAL_SERVER_ERROR).build());
     }
 
-
+    @DELETE
+    @Path("/{id}")
+    public Uni<Response> removeProduct(@PathParam("id") int id) {
+        return Uni.createFrom()
+                .converter(UniRx3Converters.fromMaybe(), productRepository.getProduct(id))
+                .onItem().ifNotNull().transformToUni(existingProduct -> removeExistingProduct(id))
+                .onItem().ifNull().continueWith(Response.status(Response.Status.NOT_FOUND).build())
+                .onFailure().recoverWithItem(Response.status(Response.Status.INTERNAL_SERVER_ERROR).build());
+    }
 
     private Uni<Response> updateExistingProduct(int id, Product existingProduct) {
         existingProduct.setId(id);
         return Uni.createFrom()
                 .converter(UniRx3Converters.fromSingle(), productRepository.updateProduct(existingProduct))
                 .map(updatedProduct -> Response.ok(updatedProduct).build());
+    }
+
+    private Uni<Response> removeExistingProduct(int id) {
+        return Uni.createFrom()
+                .converter(UniRx3Converters.fromCompletable(), productRepository.removeProduct(id))
+                .map(ignored -> Response.noContent().build());
     }
 
 
