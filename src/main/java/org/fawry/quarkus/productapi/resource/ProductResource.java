@@ -1,12 +1,18 @@
 package org.fawry.quarkus.productapi.resource;
 
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.converters.multi.MultiRx3Converters;
+import io.smallrye.mutiny.converters.uni.UniRx3Converters;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import org.fawry.quarkus.productapi.model.Product;
 import org.fawry.quarkus.productapi.repository.ProductRepository;
+import org.jboss.resteasy.reactive.ResponseStatus;
 
 @Path("/products")
 @Produces(MediaType.APPLICATION_JSON)
@@ -16,7 +22,17 @@ public class ProductResource {
     ProductRepository productRepository;
 
     @GET
-    public String getAllProducts() {
-        return "HELLO";
+    public Multi<Product> getAllProducts() {
+        return Multi.createFrom().converter(MultiRx3Converters.fromObservable(), productRepository.getAllProducts());
+    }
+
+    @GET
+    @Path("/{id}")
+    public Uni<Response> getProduct(@PathParam("id") int id) {
+        return Uni.createFrom()
+                .converter(UniRx3Converters.fromMaybe(), productRepository.getProduct(id))
+                .map(product -> Response.ok(product).build())
+                .onItem().ifNull()
+                .continueWith(Response.status(Response.Status.NOT_FOUND).build());
     }
 }
