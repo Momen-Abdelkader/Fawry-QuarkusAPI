@@ -14,6 +14,8 @@ import org.fawry.quarkus.productapi.model.Product;
 import org.fawry.quarkus.productapi.repository.ProductRepository;
 import org.jboss.resteasy.reactive.ResponseStatus;
 
+import java.net.URI;
+
 @Path("/products")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -34,5 +36,18 @@ public class ProductResource {
                 .map(product -> Response.ok(product).build())
                 .onItem().ifNull()
                 .continueWith(Response.status(Response.Status.NOT_FOUND).build());
+    }
+
+    @POST
+    public Uni<Response> createProduct(@Valid Product product) {
+        return Uni.createFrom()
+                .converter(UniRx3Converters.fromSingle(), productRepository.addProduct(product))
+                .map(createdProduct ->
+                        Response.created(URI.create("/products/" + createdProduct.getId()))
+                                .entity(createdProduct)
+                                .build()
+                )
+                .onFailure()
+                .recoverWithItem(Response.status(Response.Status.INTERNAL_SERVER_ERROR).build());
     }
 }

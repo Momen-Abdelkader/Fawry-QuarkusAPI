@@ -2,12 +2,19 @@ package org.fawry.quarkus.productapi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.smallrye.common.constraint.NotNull;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 
 @RegisterForReflection
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Product {
     private int id;
+
+    @NotBlank(message = "Name mustn't be empty")
     private String name;
+
+    @Min(value = 1, message = "Price must be greater than zero")
     private double price;
 
     public Product() {}
